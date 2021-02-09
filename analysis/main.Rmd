@@ -23,6 +23,8 @@ output:
   word_document:
     toc: yes
   allways_allow_html: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "../", output_file = "index") })
 ---
 
 ```{r, echo=FALSE}
