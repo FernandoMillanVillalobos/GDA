@@ -129,6 +129,9 @@ library(sf) # spatial data handling
 library(rmarkdown)
 library(cowplot) # theme
 library(extrafont) # fonts
+library(flexclust) # GDA
+library(gridExtra)
+library(meta)
 library(janitor)", # names  
 file = "manifest.R")
 ```
@@ -191,6 +194,12 @@ knitr::read_chunk("scripts/label_log10.R")
 source("scripts/label_log10.R")
 ```
 
+## Theme
+
+```{r}
+theme_set(theme_cowplot(font_size = 11))
+```
+
 # Data Wrangling
 
 Importing datasets.
@@ -219,6 +228,88 @@ df.j$carto_gis_training[df.j$carto_gis_training == "5"] <- "Professional"
 df.j$circle_below[df.j$circle_below == ""] <- NA 
 df.j$circle_above[df.j$circle_above == ""] <- NA 
 ```
+
+# Displaying Categorical Data
+
+Numbers of eligible voters are aggregated by Bundesland.
+
+```{r bundesland}
+
+# Data preparation
+data(btw2009, package = "flexclust")
+btw2009 <- within (btw2009, stateA <- state)
+btw2009 <- within (btw2009,
+levels(stateA) <- c("BW", "BY", "BE",
+"BB", "HB", "HH", "HE", "MV", "NI", "NW",
+"RP", "SL", "SN", "ST", "SH", "TH"))
+Voters <- with(btw2009, size <- tapply(eligible, stateA, sum))
+Bundesland <- rownames(Voters)
+btw9s <- data.frame(Bundesland, Voters)
+btw9s$EW <- c("West")
+btw9s[c("BB", "BE", "MV","SN","ST","TH"), "EW"] <- "East"
+ls <- with(btw9s, Bundesland[order(EW, -Voters)])
+btw9s <- within(btw9s, State1 <- factor(Bundesland, levels=ls))
+
+# Visualization
+b1 <- ggplot(btw9s, aes(Bundesland, Voters/1000000)) +
+             geom_bar(stat="identity") +
+             ylab("Voters (millions)")
+
+b2 <- ggplot(btw9s, aes(reorder(Bundesland, -Voters),
+             Voters/1000000)) + geom_bar(stat="identity")  +
+             xlab("Bundesland") + ylab("Voters (millions)")
+
+b3 <- ggplot(btw9s, aes(State1, Voters/1000000)) +
+             geom_bar(stat="identity")  + xlab("Bundesland") +
+             ylab("Voters (millions)")
+
+grid.arrange(b1, b2, b3)
+
+```
+
+Details of seven studies on the use of aspirin after myocardial infarction.
+
+```{r aspirin}
+
+data(Fleiss93, package="meta")
+Fleiss93 <- within(Fleiss93, {
+total <- n.e + n.c
+st <- reorder(study, -(total)) })
+ggplot(Fleiss93, aes(st, total)) + geom_bar(stat="identity") +
+xlab("") + ylab("") + ylim(0,20000)
+
+Fleiss93 <- within(Fleiss93, st1 <- as.character(study))
+Fleiss93$st1[Fleiss93$total < 2000] <- "REST"
+ggplot(Fleiss93, aes(st1, total)) + geom_bar(stat="identity") +
+xlab("") + ylab("") + ylim(0,20000)
+```
+EDA perceptual illusion.
+
+```{r pi}
+
+# Looking at participants distribution per age groups
+gender_age_tab <- table(df.j$gender, df.j$age_group)
+gender_age_df <- as.data.frame(gender_age_tab)
+names(gender_age_df) <- c("gender", "age_group", "Freq")
+p1 <- ggplot(gender_age_df, aes(x = age_group, y = Freq, fill = gender)) +
+  geom_bar(stat = "identity") +
+  theme(legend.position = "none") +
+  facet_wrap(~gender )
+
+# Looking at participants distribution and education
+gender_edu_tab <- table(df.j[, c("gender", "education")] )
+gender_edu_df <- as.data.frame(gender_edu_tab)
+names(gender_edu_df) <- c("gender", "education", "Freq")
+p2 <- ggplot(gender_edu_df, aes(x = education, y = Freq, fill = gender)) +
+  geom_bar(stat = "identity") +
+  theme(legend.position = "none") +
+  facet_wrap(~gender )
+
+grid.arrange(p1, p2)
+
+```
+
+
 
 # Linting
 
