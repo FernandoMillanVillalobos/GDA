@@ -208,27 +208,10 @@ Importing datasets.
 
 ```{r importing}
 # Read in data file
-df.j <- read.table("input/j_ds.csv", sep = ",", header = TRUE, check.names = FALSE)
+df <- read.table("input/ignore/df_pi.csv", sep = ",", header = TRUE, check.names = FALSE)
 
 # Cleaning variables names
-df.j <- janitor::clean_names(df.j)
-```
-
-Cleaning Julien's ds variables.
-
-```{r recoding}
-# Regrouping hours_sleep bottom and top categories
-df.j$hours_sleep[df.j$hours_sleep == "<3"] <- "less_than_3"
-df.j$hours_sleep[df.j$hours_sleep == ">8"] <- "more_than_8"
-
-# Recoding training categories
-df.j$photo_training[df.j$photo_training == "no training"] <- "no_training" 
-df.j$carto_gis_training[df.j$carto_gis_training == "no training"] <- "no_training" 
-df.j$carto_gis_training[df.j$carto_gis_training == "5"] <- "Professional" 
-
-# Filling empty values for circle_below and circle_above as NAs
-df.j$circle_below[df.j$circle_below == ""] <- NA 
-df.j$circle_above[df.j$circle_above == ""] <- NA 
+df <- janitor::clean_names(df)
 ```
 
 # Displaying Categorical Data
@@ -289,25 +272,6 @@ EDA perceptual illusion.
 
 ```{r pi}
 
-# Looking at participants distribution per age groups
-gender_age_tab <- table(df.j$gender, df.j$age_group)
-gender_age_df <- as.data.frame(gender_age_tab)
-names(gender_age_df) <- c("gender", "age_group", "Freq")
-p1 <- ggplot(gender_age_df, aes(x = age_group, y = Freq, fill = gender)) +
-  geom_bar(stat = "identity") +
-  theme(legend.position = "none") +
-  facet_wrap(~gender )
-
-# Looking at participants distribution and education
-gender_edu_tab <- table(df.j[, c("gender", "education")] )
-gender_edu_df <- as.data.frame(gender_edu_tab)
-names(gender_edu_df) <- c("gender", "education", "Freq")
-p2 <- ggplot(gender_edu_df, aes(x = education, y = Freq, fill = gender)) +
-  geom_bar(stat = "identity") +
-  theme(legend.position = "none") +
-  facet_wrap(~gender )
-
-grid.arrange(p1, p2)
 
 ```
 
