@@ -34,7 +34,7 @@ user_name <- "fernandomillanvillalobos" # your Git username (only needed if
 project_name <- "2020-perceptual-illusion-master" # adapt!
 package_date <- "2021-01-01" # date of the CRAN snapshot that
 # the checkpoint package uses
-r_version <- "4.0.3" # R-Version to use
+r_version <- "4.0.4" # R-Version to use
 options(Ncpus = 4) # use 4 cores for parallelized installation of packages
 if (r_version != paste0(version$major, ".", version$minor)) {
   stop("ERROR: specified R version does not match currently used.")
@@ -249,7 +249,6 @@ b3 <- ggplot(btw9s, aes(State1, Voters/1000000)) +
              ylab("Voters (millions)")
 
 grid.arrange(b1, b2, b3)
-
 ```
 
 Details of seven studies on the use of aspirin after myocardial infarction.
