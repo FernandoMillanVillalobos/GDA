@@ -1,6 +1,6 @@
 ---
-title: "Perceptual Illusion"
-subtitle: "Data Analysis"
+title: "Graphical Data Analysis (GDA)"
+subtitle: "Data Visualization"
 author: "Fernando Millan Villalobos"
 date: "February 2021"
 output:
@@ -31,7 +31,7 @@ knit: (function(inputFile, encoding) {
 # CONFIG
 user_name <- "fernandomillanvillalobos" # your Git username (only needed if
 # you want to deploy to GH pages)
-project_name <- "2020-perceptual-illusion-master" # adapt!
+project_name <- "GDA" # adapt!
 package_date <- "2021-01-01" # date of the CRAN snapshot that
 # the checkpoint package uses
 r_version <- "4.0.4" # R-Version to use
@@ -43,31 +43,17 @@ if (r_version != paste0(version$major, ".", version$minor)) {
 
 # Notes
 
-This report was generated on `r Sys.time()`. R version:
-`r paste0(version$major, ".", version$minor)` on `r version$platform`.
-For this report, CRAN packages as of `r package_date` were used.
+This report was generated on `r Sys.time()`. R version: `r paste0(version$major, ".", version$minor)` on `r version$platform`. For this report, CRAN packages as of `r package_date` were used.
 
 ...
 
 ## R-Script & data
 
-The pre-processing and analysis of the data was conducted in the [R
-project for statistical computing](https://www.r-project.org/). The
-RMarkdown script used to generate this document and all the resulting
-data can be downloaded [under this
-link](http:fernandomillanvillalobs.github.io/GDA/).
-Through executing `main.Rmd`, the herein described process can be
-reproduced and this document can be generated. In the course of this,
-data from the folder `input` will be processed and results will be
-written to `output`. The html on-line version of the analysis can be
-accessed through this
-[link](https://fernandomillanvillalobos.github.io/GDA/).
+The pre-processing and analysis of the data was conducted in the [R project for statistical computing](https://www.r-project.org/). The RMarkdown script used to generate this document and all the resulting data can be downloaded [under this link](http:fernandomillanvillalobos.github.io/GDA/). Through executing `main.Rmd`, the herein described process can be reproduced and this document can be generated. In the course of this, data from the folder `input` will be processed and results will be written to `output`. The html on-line version of the analysis can be accessed through this link.
 
 ## GitHub
 
-The code for the herein described process can also be freely downloaded
-from
-[https://github.com/fernandomillanvillalobos/GDA](https://github.com/fernandomillanvillalobos/GDA).
+The code for the herein described process can also be freely downloaded from <https://github.com/fernandomillanvillalobos/GDA>.
 
 ## Data description of output files
 
@@ -269,8 +255,7 @@ b3 <- ggplot(btw9s, aes(State1, Voters/1000000)) +
 grid.arrange(b1, b2, b3)
 ```
 
-Details of seven studies on the use of aspirin after myocardial
-infarction.
+Details of seven studies on the use of aspirin after myocardial infarction.
 
 ```{r aspirin}
 
@@ -291,9 +276,7 @@ xlab("") + ylab("") + ylim(0,20000)
 
 ## Grouped Data and the "Group" Aesthetic
 
-The group aesthetic is usually only needed when the grouping information
-you need to tell ggplot about is not built into the variables being
-mapped.
+The group aesthetic is usually only needed when the grouping information you need to tell ggplot about is not built into the variables being mapped.
 
 ```{r}
 p <- ggplot(data = gapminder,
@@ -304,11 +287,7 @@ p + geom_line(aes(group=country))
 
 ## Facet to Make Small Multiples
 
-The facet_wrap() function can take a series of arguments, but the most
-important is the first one, which is specified using R's "formula"
-syntax, which uses the tilde character, \~. Facets are usually a
-one-sided formula. Most of the time you will just want a single variable
-on the right side of the formula.
+The facet_wrap() function can take a series of arguments, but the most important is the first one, which is specified using R's "formula" syntax, which uses the tilde character, \~. Facets are usually a one-sided formula. Most of the time you will just want a single variable on the right side of the formula.
 
 ```{r}
 p <- ggplot(data = gapminder,
@@ -326,15 +305,7 @@ p + geom_line(color="gray70", aes(group = country)) +
          title = "GDP per capita on Five Continents")
 ```
 
-The facet_wrap() function is best used when you want a series of small
-multiples based on a single categorical variable. Your panels will be
-laid out in order and then wrapped into a grid. If you wish you can
-specify the number of rows or the number of columns in the resulting
-layout. Facets can be more complex than this. For instance, you might
-want to cross-classify some data by two categorical variables. In that
-case you should try facet_grid() instead. This function will lay out
-your plot in a true two-dimensional arrangement, instead of a series of
-panels wrapped into a grid.
+The facet_wrap() function is best used when you want a series of small multiples based on a single categorical variable. Your panels will be laid out in order and then wrapped into a grid. If you wish you can specify the number of rows or the number of columns in the resulting layout. Facets can be more complex than this. For instance, you might want to cross-classify some data by two categorical variables. In that case you should try facet_grid() instead. This function will lay out your plot in a true two-dimensional arrangement, instead of a series of panels wrapped into a grid.
 
 ```{r}
 p <- ggplot(data = gss_sm,
@@ -344,24 +315,11 @@ p + geom_point(alpha = 0.2) +
     facet_grid(sex ~ race)
 ```
 
-Multipanel layouts of this kind are especially effective when used to
-summarize continuous variation(as in a scatterplot) across two or more
-categorical variables, with the categories (and hence the panels)
-ordered in some sensible way.
+Multipanel layouts of this kind are especially effective when used to summarize continuous variation(as in a scatterplot) across two or more categorical variables, with the categories (and hence the panels) ordered in some sensible way.
 
 ## Geoms Can Transform Data
 
-Some geoms plot our data directly on the figure, as is the case with
-geom_point(), which takes variables designated as x and y and plots the
-points on a grid. But other geoms clearly do more work on the data
-before it gets plotted. Every geom\_ function has an associated stat\_
-function that it uses by default. The reverse is also the case: every
-stat\_ function has an associated geom\_ function that it will plot by
-default if you ask it to. Sometimes the calculations being done by the
-stat\_ functions that work together with the geom\_ functions might not
-be immediately obvious. When ggplot calculates the count or the
-proportion, it returns temporary variables that we can use as mappings
-in our plots.
+Some geoms plot our data directly on the figure, as is the case with geom_point(), which takes variables designated as x and y and plots the points on a grid. But other geoms clearly do more work on the data before it gets plotted. Every geom\_ function has an associated stat\_ function that it uses by default. The reverse is also the case: every stat\_ function has an associated geom\_ function that it will plot by default if you ask it to. Sometimes the calculations being done by the stat\_ functions that work together with the geom\_ functions might not be immediately obvious. When ggplot calculates the count or the proportion, it returns temporary variables that we can use as mappings in our plots.
 
 ```{r}
 p <- ggplot(data = gss_sm, mapping = aes(x = bigregion)) 
@@ -387,8 +345,7 @@ p + geom_bar() + guides(fill = FALSE) #  If we set guides(fill = FALSE), the leg
 
 ## Frequency Plots the Slightly Awkward Way
 
-A more appropriate use of the fill aesthetic with geom_bar() is to
-cross-classify two categorical variables. This is the graphical equivalent of a frequency table of counts or proportions. When we cross-classify categories in bar charts, there are several ways to display the results. With geom_bar() the output is controlled by the position argument.
+A more appropriate use of the fill aesthetic with geom_bar() is to cross-classify two categorical variables. This is the graphical equivalent of a frequency table of counts or proportions. When we cross-classify categories in bar charts, there are several ways to display the results. With geom_bar() the output is controlled by the position argument.
 
 ```{r}
 p <- ggplot(data = gss_sm,
@@ -413,10 +370,12 @@ p + geom_bar(position = "dodge",
              mapping = aes(y = ..prop.., group = bigregion)) +
     facet_wrap(~ bigregion, ncol = 1)
 ```
-## Histograms and density plots
-A histogram is a way of summarizing a continuous variable by chopping it up into segments or “bins” and counting how many observations are found within each bin. In a bar chart, the categories are given to us going in (e.g., regions of the country, or religious affiliation). With a histogram, we have to decide how finely to bin the data. As with the bar charts, a newly-calculated variable, count, appears on the x-axis.
 
-While histograms summarize single variables, it’s also possible to use several at once to compare distributions. We can facet histograms by some variable of interest.
+## Histograms and density plots
+
+A histogram is a way of summarizing a continuous variable by chopping it up into segments or "bins" and counting how many observations are found within each bin. In a bar chart, the categories are given to us going in (e.g., regions of the country, or religious affiliation). With a histogram, we have to decide how finely to bin the data. As with the bar charts, a newly-calculated variable, count, appears on the x-axis.
+
+While histograms summarize single variables, it's also possible to use several at once to compare distributions. We can facet histograms by some variable of interest.
 
 ```{r}
 # By default, the geom_histogram() function will choose a bin size for us based on a rule of thumb.
@@ -446,8 +405,10 @@ p <- ggplot(data = subset(midwest, subset = state %in% oh_wi),
             mapping = aes(x = area, fill = state, color = state))
 p + geom_density(alpha = 0.3, mapping = (aes(y = ..scaled..)))
 ```
+
 ## Avoid transformations when necessary
-Often our data is, in effect, already a summary table. This can happen when we have computed a table of marginal frequencies or percentages from the original data. Because we are working directly with percentage values in a summary table,we no longer have any need for ggplot to count up values for us or perform any other calculations. That is, we do not need the services of any stat_ functions. We can tell geom_bar() not to do any work on the variable before plotting it. To do this we say stat = ‘identity’ in the geom_bar() call.
+
+Often our data is, in effect, already a summary table. This can happen when we have computed a table of marginal frequencies or percentages from the original data. Because we are working directly with percentage values in a summary table,we no longer have any need for ggplot to count up values for us or perform any other calculations. That is, we do not need the services of any stat\_ functions. We can tell geom_bar() not to do any work on the variable before plotting it. To do this we say stat = 'identity' in the geom_bar() call.
 
 ```{r}
 p <- ggplot(data = titanic,
@@ -469,9 +430,7 @@ p + geom_col() + guides(fill = FALSE) +
 
 # Linting
 
-The code in this RMarkdown is linted with the [lintr
-package](https://github.com/jimhester/lintr), which is based on the
-[tidyverse style guide](http://style.tidyverse.org/).
+The code in this RMarkdown is linted with the [lintr package](https://github.com/jimhester/lintr), which is based on the [tidyverse style guide](http://style.tidyverse.org/).
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
 lintr::lint("main.Rmd", linters =
