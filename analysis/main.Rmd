@@ -1,19 +1,31 @@
 ---
-editor_options: 
-  markdown: 
-    wrap: 72
+title: "Perceptual Illusion"
+subtitle: "Data Analysis"
+author: "Fernando Millan Villalobos"
+date: "February 2021"
+output:
+  html_document:
+    code_folding: show
+    echo: TRUE
+    warning: FALSE
+    message: FALSE
+    highlight: pygments
+    theme: paper
+    df_print: kable
+    toc: yes
+    toc_depth: 4
+    number_sections: yes
+    toc_float: 
+      collapsed: yes
+      smooth_scroll: false
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+  allways_allow_html: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "../", output_file = "index") })
 ---
-
-p \<- ggplot(data = gapminder, mapping = aes(x = year, y = gdpPercap)) p
-+ geom_line(aes(group = country)) + facet_wrap(\~ continent)--- title:
-"Perceptual Illusion" subtitle: "Data Analysis" author: "Fernando Millan
-Villalobos" date: "February 2021" output: html_document: code_folding:
-show echo: TRUE warning: FALSE message: FALSE highlight: pygments theme:
-paper df_print: kable toc: yes toc_depth: 4 number_sections: yes
-toc_float: collapsed: yes smooth_scroll: false pdf_document: toc: yes
-word_document: toc: yes allways_allow_html: yes knit:
-(function(inputFile, encoding) { rmarkdown::render(inputFile, encoding =
-encoding, output_dir = "../", output_file = "index") }) ---
 
 ```{r, echo=FALSE}
 # CONFIG
@@ -43,19 +55,19 @@ The pre-processing and analysis of the data was conducted in the [R
 project for statistical computing](https://www.r-project.org/). The
 RMarkdown script used to generate this document and all the resulting
 data can be downloaded [under this
-link](http:fernandomillanvillalobs.github.io/2020-perceptual-illusion-master/).
+link](http:fernandomillanvillalobs.github.io/GDA/).
 Through executing `main.Rmd`, the herein described process can be
 reproduced and this document can be generated. In the course of this,
 data from the folder `input` will be processed and results will be
 written to `output`. The html on-line version of the analysis can be
 accessed through this
-[link](https://fernandomillanvillalobos.github.io/2020-perceptual-illusion-master/).
+[link](https://fernandomillanvillalobos.github.io/GDA/).
 
 ## GitHub
 
 The code for the herein described process can also be freely downloaded
 from
-[https://github.com/fernandomillanvillalobs/2020-perceptual-illusion-master](https://github.com/fernandomillanvillalobos/2020-perceptual-illusion-master).
+[https://github.com/fernandomillanvillalobos/GDA](https://github.com/fernandomillanvillalobos/GDA).
 
 ## Data description of output files
 
@@ -136,7 +148,8 @@ library(extrafont) # fonts
 library(flexclust) # GDA
 library(gridExtra)
 library(meta)
-library(socviz) # book Data Visualization: A Practical... 
+library(socviz) # book Data Visualization: A Practical...
+library(gapminder)
 library(janitor)", # names  
 file = "manifest.R")
 ```
