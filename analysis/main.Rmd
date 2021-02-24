@@ -134,6 +134,7 @@ library(extrafont) # fonts
 library(flexclust) # GDA
 library(gridExtra)
 library(meta)
+library(mgcv)
 library(socviz) # book Data Visualization: A Practical...
 library(gapminder)
 library(ggrepel) # work with label 
