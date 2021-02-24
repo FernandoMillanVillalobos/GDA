@@ -1,31 +1,56 @@
----
-title: "Graphical Data Analysis (GDA)"
-subtitle: "Data Visualization"
-author: "Fernando Millan Villalobos"
-date: "February 2021"
-output:
-  html_document:
-    code_folding: show
-    echo: TRUE
-    warning: FALSE
-    message: FALSE
-    highlight: pygments
-    theme: paper
-    df_print: kable
-    toc: yes
-    toc_depth: 4
-    number_sections: yes
-    toc_float: 
-      collapsed: yes
-      smooth_scroll: false
-  pdf_document:
-    toc: yes
-  word_document:
-    toc: yes
-  allways_allow_html: yes
-knit: (function(inputFile, encoding) {
-  rmarkdown::render(inputFile, encoding = encoding, output_dir = "../", output_file = "index") })
----
++-------------------------------------------------------------------------------------------------+
+| itle: "Graphical Data Analysis (GDA)"                                                           |
++-------------------------------------------------------------------------------------------------+
+| ubtitle: "Data Visualization"                                                                   |
++-------------------------------------------------------------------------------------------------+
+| uthor: "Fernando Millan Villalobos"                                                             |
++-------------------------------------------------------------------------------------------------+
+| ate: "February 2021"                                                                            |
++-------------------------------------------------------------------------------------------------+
+| utput:                                                                                          |
++-------------------------------------------------------------------------------------------------+
+| html_document:                                                                                  |
++-------------------------------------------------------------------------------------------------+
+| code_folding: show                                                                              |
++-------------------------------------------------------------------------------------------------+
+| echo: TRUE                                                                                      |
++-------------------------------------------------------------------------------------------------+
+| warning: FALSE                                                                                  |
++-------------------------------------------------------------------------------------------------+
+| message: FALSE                                                                                  |
++-------------------------------------------------------------------------------------------------+
+| highlight: pygments                                                                             |
++-------------------------------------------------------------------------------------------------+
+| theme: paper                                                                                    |
++-------------------------------------------------------------------------------------------------+
+| df_print: kable                                                                                 |
++-------------------------------------------------------------------------------------------------+
+| toc: yes                                                                                        |
++-------------------------------------------------------------------------------------------------+
+| toc_depth: 4                                                                                    |
++-------------------------------------------------------------------------------------------------+
+| number_sections: yes                                                                            |
++-------------------------------------------------------------------------------------------------+
+| toc_float:                                                                                      |
++-------------------------------------------------------------------------------------------------+
+| collapsed: yes                                                                                  |
++-------------------------------------------------------------------------------------------------+
+| smooth_scroll: false                                                                            |
++-------------------------------------------------------------------------------------------------+
+| pdf_document:                                                                                   |
++-------------------------------------------------------------------------------------------------+
+| toc: yes                                                                                        |
++-------------------------------------------------------------------------------------------------+
+| word_document:                                                                                  |
++-------------------------------------------------------------------------------------------------+
+| toc: yes                                                                                        |
++-------------------------------------------------------------------------------------------------+
+| allways_allow_html: yes                                                                         |
++-------------------------------------------------------------------------------------------------+
+| nit: (function(inputFile, encoding) {                                                           |
++-------------------------------------------------------------------------------------------------+
+| rmarkdown::render(inputFile, encoding = encoding, output_dir = "../", output_file = "index") }) |
++-------------------------------------------------------------------------------------------------+
 
 ```{r, echo=FALSE}
 # CONFIG
@@ -136,6 +161,7 @@ library(gridExtra)
 library(meta)
 library(socviz) # book Data Visualization: A Practical...
 library(gapminder)
+library(ggrepel) # work with label 
 library(janitor)", # names  
 file = "manifest.R")
 ```
@@ -389,7 +415,6 @@ p <- ggplot(data = midwest,
 p + geom_histogram(bins = 10)
 
 oh_wi <- c("OH", "WI")
-
 # subset the data
 p <- ggplot(data = subset(midwest, subset = state %in% oh_wi), # %in% operator is a convenient way to filter on more than one termin a variable
             mapping = aes(x = percollege, fill = state))
@@ -428,6 +453,274 @@ p + geom_col() + guides(fill = FALSE) +
                   Washington Post, December 27th 2017.")
 ```
 
+## Use Pipes to Summarize Data
+
+letting the geoms (and their stat\_ functions) do the work can sometimes get a little confusing. It is too easy to lose track of whether one has calculated row margins, column margins, or overall relative frequencies. A better strategy is to calculate the frequency table you want first and then plot that table. This has the benefit of allowing you do to some quick sanity checks on your tables, to make sure you haven't made any errors.
+
+In addition to making our code easier to read, it lets us more easily perform sanity checks on our results, so that we are sure we have grouped and summarized things in the right order.
+
+```{r}
+rel_by_region <- gss_sm %>%
+    group_by(bigregion, religion) %>% # from outermost to innermost 
+    summarize(N = n()) %>%
+    mutate(freq = N / sum(N), # calculate relative proportion 
+           pct = round((freq*100), 0)) # calculate percentage
+
+# Checking pct
+rel_by_region %>% group_by(bigregion) %>%
+    summarize(total = sum(pct))
+
+# As a rule, dodged charts can be more cleanly expressed as faceted plots. Faceting removes the need for a legend and thus makes the chart simpler to read.
+
+p <- ggplot(rel_by_region, aes(x = religion, y = pct, fill = religion))
+p + geom_col(position = "dodge2") +
+    labs(x = NULL, y = "Percent", fill = "Religion") +
+    guides(fill = FALSE) + 
+    coord_flip() + # flip the axis 
+    facet_grid(~ bigregion)
+```
+
+## Continuous Variables by Group or Category
+
+The variables specified in group_by() are retained in the new data frame, the variables created with summarize() are added, and all the other variables in the original data are dropped.
+
+We generally want our plots to present data in some meaningful order. The reorder() function will do this for us. It takes two required arguments. The first is the categorical variable or factor that we want to reorder. In this case, that's country. The second is the variable we want to reorder it by. Here that is the donation rate, donors. The third and optional argument to reorder() is the function you want to use as a summary statistic. If you give reorder() only the first two required arguments, then by default it will reorder the categories of your first variable by the mean value of the second. You can use any sensible function you like to reorder the categorical variable (e.g., median, or sd).
+
+```{r}
+organdata %>% select(1:6) %>% sample_n(size = 10) # pick a sample 
+
+# dotplot
+p <- ggplot(data = organdata, mapping = aes(x = year, y = donors)) 
+p + geom_point()
+
+# lineplot
+p <- ggplot(data = organdata,
+            mapping = aes(x = year, y = donors))
+p + geom_line(aes(group = country)) + facet_wrap(~ country)
+
+# boxplot
+p <- ggplot(data = organdata,
+            mapping = aes(x = country, y = donors))
+p + geom_boxplot() +
+  coord_flip()
+
+# boxplot reordered
+p <- ggplot(data = organdata,
+            mapping = aes(x = reorder(country, donors, na.rm = TRUE),
+                          y = donors))
+p + geom_boxplot() +
+    labs(x=NULL) +
+    coord_flip()
+
+# violin plot reordered and filled
+p <- ggplot(data = organdata,
+            mapping = aes(x = reorder(country, donors, na.rm=TRUE),
+                          y = donors, fill = world))
+p + geom_violin() + labs(x=NULL) +
+    coord_flip() + theme(legend.position = "top")
+
+# dotplot reordered and colored
+p <- ggplot(data = organdata,
+            mapping = aes(x = reorder(country, donors, na.rm=TRUE),
+                          y = donors, color = world))
+p + geom_point() + labs(x=NULL) +
+    coord_flip() + theme(legend.position = "top")
+
+# dotplot jittered, reordered and colored
+p <- ggplot(data = organdata,
+            mapping = aes(x = reorder(country, donors, na.rm=TRUE),
+                          y = donors, color = world))
+p + geom_jitter(position = position_jitter(width=0.15)) + # to avoid overplotting 
+    labs(x=NULL) + coord_flip() + theme(legend.position = "top")
+```
+
+When we want to summarize a categorical variable that just has one point per category, we should use this approach as well. The result will be a Cleveland dotplot, a simple and extremely effective method of presenting data that is usually better than either a bar chart or a table. Cleveland dotplots are generally preferred to bar or column charts. When making them, put the categories on the y-axis and order them in the way that is most relevant to the numerical summary you are providing. This sort of plot is also an excellent way to summarizemodel results or any data with with error ranges.
+
+```{r}
+by_country <- organdata %>% group_by(consent_law, country) %>%
+    summarize(donors_mean = mean(donors, na.rm = TRUE),
+              donors_sd = sd(donors, na.rm = TRUE),
+              gdp_mean = mean(gdp, na.rm = TRUE),
+              health_mean = mean(health, na.rm = TRUE),
+              roads_mean = mean(roads, na.rm = TRUE),
+              cerebvas_mean = mean(cerebvas, na.rm = TRUE))
+
+# Doing the same in another better way
+by_country <- organdata %>% group_by(consent_law, country) %>%
+    summarize_if(is.numeric, list(mean, sd), na.rm = TRUE) %>% # list instead funs
+    ungroup()
+by_country # vars are named using the original variable, with the function’s name appended
+
+# Cleveland dotplot reordered and colored
+p <- ggplot(data = by_country,
+            mapping = aes(x = donors_fn1, y = reorder(country, donors_fn1),
+                          color = consent_law))
+p + geom_point(size = 3) +
+    labs(x = "Donor Procurement Rate",
+         y = "", color = "Consent Law") +
+    theme(legend.position="top")
+
+# Cleveland dotplot reordered, colored and faceted
+p <- ggplot(data = by_country,
+            mapping = aes(x = donors_fn1,
+                          y = reorder(country, donors_fn1)))
+
+p + geom_point(size=3) +
+    facet_wrap(~ consent_law, scales = "free_y", ncol = 1) + # col arg to make panels appear on top of other and make y-scale free; where one axis is categorical, as here, we can free the categorical axis and leave the continuous one fixed 
+    labs(x= "Donor Procurement Rate",
+         y= "")
+
+# Dot-and-whisker plot
+p <- ggplot(data = by_country, mapping = aes(x = reorder(country,
+              donors_fn1), y = donors_fn1))
+
+p + geom_pointrange(mapping = aes(ymin = donors_fn1 - donors_fn2, # how us a point estimate and a range around it 
+       ymax = donors_fn1 + donors_fn2)) +
+     labs(x= "", y= "Donor Procurement Rate") + coord_flip()
+```
+
+## Plot Text Directly
+
+The ggrepel package provides geom_text_repel() and geom_label_repel(), two geoms that can pick out labels much more flexibly than the default geom_text(). The ggrepel package has several other useful geoms and options to aid with effectively plotting labels along with points. The performance of its labeling algorithm is consistently very good. For many purposes it will be a better first choice than geom_text().
+
+```{r}
+elections_historic %>% select(2:7) 
+
+p_title <- "Presidential Elections: Popular & Electoral College Margins"
+p_subtitle <- "1824-2016"
+p_caption <- "Data for 2016 are provisional."
+x_label <- "Winner's share of Popular Vote"
+y_label <- "Winner's share of Electoral College Votes"
+
+p <- ggplot(elections_historic, aes(x = popular_pct, y = ec_pct,
+                                    label = winner_label))
+
+p + geom_hline(yintercept = 0.5, size = 1.4, color = "gray80") + # two new geoms, geom_hline() and geom_vline() to make the lines. see also geom_abline() geom that draws straight lines based on a supplied slope and intercept
+    geom_vline(xintercept = 0.5, size = 1.4, color = "gray80") +
+    geom_point() +
+    geom_text_repel() +
+    scale_x_continuous(labels = scales::percent) +
+    scale_y_continuous(labels = scales::percent) +
+    labs(x = x_label, y = y_label, title = p_title, subtitle = p_subtitle,
+         caption = p_caption)
+```
+
+## Label Outliers
+
+Sometimes we want to pick out some points of interest in the data without labeling every single item. Alternatively, we can pick out specific points by creating a dummy variable in the data set just for this purpose.
+
+```{r}
+p <- ggplot(data = by_country,
+            mapping = aes(x = gdp_fn1, y = health_fn1))
+
+# Using subset to filter the data
+p + geom_point() +
+    geom_text_repel(data = subset(by_country, gdp_fn1 > 25000),
+                    mapping = aes(label = country))
+
+p <- ggplot(data = by_country,
+            mapping = aes(x = gdp_fn1, y = health_fn1))
+
+p + geom_point() +
+    geom_text_repel(data = subset(by_country,
+                                  gdp_fn1 > 25000 | health_fn1 < 1500 |
+                                  country %in% "Belgium"),
+                    mapping = aes(label = country))
+
+# Creating a dummy variable to subset the data
+organdata$ind <- organdata$ccode %in% c("Ita", "Spa") &
+                    organdata$year > 1998
+
+p <- ggplot(data = organdata,
+            mapping = aes(x = roads,
+                          y = donors, color = ind))
+p + geom_point() +
+    geom_text_repel(data = subset(organdata, ind),
+                    mapping = aes(label = ccode)) +
+    guides(label = FALSE, color = FALSE)
+```
+
+## Write and draw in the plot area
+
+Sometimes we want to annotate the figure directly.We use annotate() for this purpose. We will tell annotate() to use a text geom temporarily taking advantage of their features in order to place something on the plot. The annotate() function can work with other geoms, too. The most obvious use-case is putting arbitrary text on the plot.
+
+```{r}
+p <- ggplot(data = organdata, mapping = aes(x = roads, y = donors))
+p + geom_point() + annotate(geom = "text", x = 91, y = 33,
+                            label = "A surprisingly high \n recovery rate.",
+                            hjust = 0)
+```
+
+## Understanding Scales, Guides, and Themes
+
+Learning about new geoms extended what we have seen already. Each geom makes a different type of plot. Different plots require different mappings in order to work, and so each geom\_ function takes mappings tailored to the kind of graph it draws. You can't use geom_point() to make a scatterplot without supplying an x and a y mapping, for example. Using geom_histogram() only requires you to supply an x mapping. Similarly, geom_pointrange() requires ymin and ymax mappings in order to know where to draw the lineranges it makes. A geom\_ function may take optional arguments, too. When using geom_boxplot() you can specify what the outliers look like using arguments like outlier.shape and outlier.color.
+
+Now we'll make use of new functions for controlling some aspects of the appearance of our graph.
+
+-   Every aesthetic mapping has a scale. If you want to adjust how that scale is marked or graduated, then you use a scale\_ function.
+-   Many scales come with a legend or key to help the reader interpret the graph. These are called guides. You can make adjustments to them with the guides() function. Perhaps the most common use case is to make the legend disappear, as it is sometimes superfluous. Another is to adjust the arrangement of the key in legends and colorbars.
+-   Graphs have other features not strictly connected to the logical structure of the data being displayed. These include things like their background color, the typeface used for labels, or the placement of the legend on the graph. To adjust these, use the theme() function.
+
+Consistent with ggplot’s overall approach, adjusting some visible feature of the graph means first thinking about the relationship that the feature has with the underlying data. Roughly speaking, if the change you want to make will affect the substantive interpretation of any particular geom, then most likely you will either be mapping an aesthetic to a variable using that geom’s aes() function, or you will be specifying a change via some scale_ function. If the change you want to make does not affect the interpretation of a given geom_, then most likely you will either be setting a variable inside the geom_ function, or making a cosmetic change via the theme() function.
+
+```{r}
+p <- ggplot(data = organdata,
+            mapping = aes(x = roads,
+                          y = donors,
+                          color = world))
+p + geom_point()
+```
+Scales and guides are closely connected, which can make things confusing. The guide provides information about the scale, such as in a legend or colorbar. Thus, it is possible to make adjustments to guides from inside the various scale_ functions. More often it is easier to use the guides() function directly.
+
+A plot with three aesthetic mappings. The variable roads is mapped to x; donors is mapped to y; and world is mapped to color. The x and y scales are both continuous, running smoothly from just under the lowest value of the variable to just over the highest value. Various labeled tick marks orient the reader to the values on each axis. The color mapping also has a scale. The world measure is an unordered categorical variable, so its scale is discrete. It takes one of four values, each represented by a different color.
+
+Along with color, mappings like fill, shape, and size will have scales that we might want to customize or adjust. We could have mapped world to shape instead of color. In that case our four-category variable would have a scale consisting of four different shapes. Scales for these mappings may have labels, axis tick marks at particular positions, or specific colors or shapes. If we want to adjust them, we use one of the scale_ functions.
+
+Many different kinds of variable can be mapped. More often than not x and y are continuous measures. But they might also easily be discrete, as when we mapped country names to the y axis in our boxplots and dotplots. An x or y mapping can also be defined as a transformation onto a log scale, or as a special sort of number value like a date. Similarly, a color or a fill mapping can be discrete and unordered, as with our world variable, or discrete and ordered, as with letter grades in an exam. A color or fill mapping can also be a continuous quantity, represented as a gradient running smoothly from a low to a high value. Finally, both continuous gradients and ordered discrete values might have some defined neutral midpoint with extremes diverging in both directions.
+
+Because we have several potential mappings, and each mapping might be to one of several different scales, we end up with a lot of individual scale_ functions. Each deals with one combination of mapping and scale. They are named according to a consistent logic: *scale_<MAPPING>_<KIND>*. First comes the scale_ name, then the mapping it applies to, and finally the kind of value the scale will display. Thus, the scale_x_continuous() function controls x scales for continuous variables; scale_y_discrete() adjusts y scales for discrete variables; and scale_x_log10() transforms an x mapping to a log scale. Most of the time, ggplot will guess correctly what sort of scale is needed for your mapping. Then it will work out some default features of the scale (such as its labels and where the tick marks go). In many cases you will not need to make any scale adjustments. If x is mapped to a continuous variable then adding + scale_x_continuous() to your plot statement with no further arguments will have no effect. It is already there implicitly. Adding + scale_x_log10(), on the other hand, will transform your scale, as now you have replaced the default treatment of a continuous x variable.
+
+If you want to adjust the labels or tick marks on a scale, you will need to know which mapping it is for and what sort of scale it is. Then you supply the arguments to the appropriate scale function. For example, we can change the x-axis of the previous plot to a log scale, and then also change the position and labels of the tick marks on the y-axis.
+
+```{r}
+p <- ggplot(data = organdata,
+            mapping = aes(x = roads,
+                          y = donors,
+                          color = world))
+p + geom_point() +
+    scale_x_log10() +
+    scale_y_continuous(breaks = c(5, 15, 25),
+                       labels = c("Five", "Fifteen", "Twenty Five"))
+```
+The same applies to mappings like color and fill. Here the available scale_ functions include ones that deal with continuous, diverging, and discrete variables, as well as others that we will encounter later when we discuss the use of color and color palettes in more detail. When working with a scale that produces a legend, we can also use this its scale_ function to specify the labels in the key. To change the title of the legend, however, we use the labs() function, which lets us label all the mappings.
+
+```{r}
+p <- ggplot(data = organdata,
+            mapping = aes(x = roads,
+                          y = donors,
+                          color = world))
+p + geom_point() +
+    scale_color_discrete(labels =
+                             c("Corporatist", "Liberal",
+                               "Social Democratic", "Unclassified")) +
+    labs(x = "Road Deaths",
+         y = "Donor Procurement",
+        color = "Welfare State")
+```
+If we want to move the legend somewhere else on the plot, we are making a purely cosmetic decision and that is the job of the theme() function. As we have already seen, adding + theme(legend.position = "top") will move the legend as instructed. Finally, to make the legend disappear altogether, we tell ggplot that we do not want a guide for that scale.
+
+We will use scale_ functions fairly regularly to make small adjustments to the labels and axes of our graphs. And we will occasionally use the theme() function to make some cosmetic adjustments.
+
+```{r}
+p <- ggplot(data = organdata,
+            mapping = aes(x = roads,
+                          y = donors,
+                          color = world))
+p + geom_point() +
+    labs(x = "Road Deaths",
+         y = "Donor Procurement") +
+    guides(color = FALSE)
+```
 # Linting
 
 The code in this RMarkdown is linted with the [lintr package](https://github.com/jimhester/lintr), which is based on the [tidyverse style guide](http://style.tidyverse.org/).
