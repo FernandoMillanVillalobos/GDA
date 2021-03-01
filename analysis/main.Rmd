@@ -1,6 +1,6 @@
 ---
 title: "Graphical Data Analysis (GDA)"
-subtitle: "Data Visuzalization"
+subtitle: "Data Visualization"
 author: "Fernando Millan Villalobos"
 date: "February 2021"
 output:
@@ -135,9 +135,13 @@ library(flexclust) # GDA
 library(gridExtra)
 library(meta)
 library(mgcv)
+library(psych)
 library(socviz) # book Data Visualization: A Practical...
 library(gapminder)
-library(ggrepel) # work with label 
+library(ggrepel) # work with label
+library(dichromat) # palettes for color-blind
+library(RColorBrewer)
+library(ggthemes) # themes 
 library(janitor)", # names  
 file = "manifest.R")
 ```
@@ -276,7 +280,9 @@ xlab("") + ylab("") + ylim(0,20000)
 
 # Data Visualization: A Practical Introduction (Kieran Healy)
 
-## Grouped Data and the "Group" Aesthetic
+## Show the Right Numbers
+
+### Grouped Data and the "Group" Aesthetic
 
 The group aesthetic is usually only needed when the grouping information you need to tell ggplot about is not built into the variables being mapped.
 
@@ -287,7 +293,7 @@ p <- ggplot(data = gapminder,
 p + geom_line(aes(group=country))
 ```
 
-## Facet to Make Small Multiples
+### Facet to Make Small Multiples
 
 The facet_wrap() function can take a series of arguments, but the most important is the first one, which is specified using R's "formula" syntax, which uses the tilde character, \~. Facets are usually a one-sided formula. Most of the time you will just want a single variable on the right side of the formula.
 
@@ -319,7 +325,7 @@ p + geom_point(alpha = 0.2) +
 
 Multipanel layouts of this kind are especially effective when used to summarize continuous variation(as in a scatterplot) across two or more categorical variables, with the categories (and hence the panels) ordered in some sensible way.
 
-## Geoms Can Transform Data
+### Geoms Can Transform Data
 
 Some geoms plot our data directly on the figure, as is the case with geom_point(), which takes variables designated as x and y and plots the points on a grid. But other geoms clearly do more work on the data before it gets plotted. Every geom\_ function has an associated stat\_ function that it uses by default. The reverse is also the case: every stat\_ function has an associated geom\_ function that it will plot by default if you ask it to. Sometimes the calculations being done by the stat\_ functions that work together with the geom\_ functions might not be immediately obvious. When ggplot calculates the count or the proportion, it returns temporary variables that we can use as mappings in our plots.
 
@@ -345,7 +351,7 @@ p <- ggplot(data = gss_sm,
 p + geom_bar() + guides(fill = FALSE) #  If we set guides(fill = FALSE), the legend is removed
 ```
 
-## Frequency Plots the Slightly Awkward Way
+### Frequency Plots the Slightly Awkward Way
 
 A more appropriate use of the fill aesthetic with geom_bar() is to cross-classify two categorical variables. This is the graphical equivalent of a frequency table of counts or proportions. When we cross-classify categories in bar charts, there are several ways to display the results. With geom_bar() the output is controlled by the position argument.
 
@@ -373,7 +379,7 @@ p + geom_bar(position = "dodge",
     facet_wrap(~ bigregion, ncol = 1)
 ```
 
-## Histograms and density plots
+### Histograms and density plots
 
 A histogram is a way of summarizing a continuous variable by chopping it up into segments or "bins" and counting how many observations are found within each bin. In a bar chart, the categories are given to us going in (e.g., regions of the country, or religious affiliation). With a histogram, we have to decide how finely to bin the data. As with the bar charts, a newly-calculated variable, count, appears on the x-axis.
 
@@ -407,7 +413,7 @@ p <- ggplot(data = subset(midwest, subset = state %in% oh_wi),
 p + geom_density(alpha = 0.3, mapping = (aes(y = ..scaled..)))
 ```
 
-## Avoid transformations when necessary
+### Avoid transformations when necessary
 
 Often our data is, in effect, already a summary table. This can happen when we have computed a table of marginal frequencies or percentages from the original data. Because we are working directly with percentage values in a summary table,we no longer have any need for ggplot to count up values for us or perform any other calculations. That is, we do not need the services of any stat\_ functions. We can tell geom_bar() not to do any work on the variable before plotting it. To do this we say stat = 'identity' in the geom_bar() call.
 
@@ -429,7 +435,9 @@ p + geom_col() + guides(fill = FALSE) +
                   Washington Post, December 27th 2017.")
 ```
 
-## Use Pipes to Summarize Data
+## Graph Tables, Add Labels, Make Notes
+
+### Use Pipes to Summarize Data
 
 letting the geoms (and their stat\_ functions) do the work can sometimes get a little confusing. It is too easy to lose track of whether one has calculated row margins, column margins, or overall relative frequencies. A better strategy is to calculate the frequency table you want first and then plot that table. This has the benefit of allowing you do to some quick sanity checks on your tables, to make sure you haven't made any errors.
 
@@ -443,8 +451,9 @@ rel_by_region <- gss_sm %>%
            pct = round((freq*100), 0)) # calculate percentage
 
 # Checking pct
-rel_by_region %>% group_by(bigregion) %>%
-    summarize(total = sum(pct))
+rel_by_region %>% 
+  group_by(bigregion) %>%
+  summarize(total = sum(pct))
 
 # As a rule, dodged charts can be more cleanly expressed as faceted plots. Faceting removes the need for a legend and thus makes the chart simpler to read.
 
@@ -456,7 +465,7 @@ p + geom_col(position = "dodge2") +
     facet_grid(~ bigregion)
 ```
 
-## Continuous Variables by Group or Category
+### Continuous Variables by Group or Category
 
 The variables specified in group_by() are retained in the new data frame, the variables created with summarize() are added, and all the other variables in the original data are dropped.
 
@@ -513,8 +522,9 @@ p + geom_jitter(position = position_jitter(width=0.15)) + # to avoid overplottin
 When we want to summarize a categorical variable that just has one point per category, we should use this approach as well. The result will be a Cleveland dotplot, a simple and extremely effective method of presenting data that is usually better than either a bar chart or a table. Cleveland dotplots are generally preferred to bar or column charts. When making them, put the categories on the y-axis and order them in the way that is most relevant to the numerical summary you are providing. This sort of plot is also an excellent way to summarizemodel results or any data with with error ranges.
 
 ```{r}
-by_country <- organdata %>% group_by(consent_law, country) %>%
-    summarize(donors_mean = mean(donors, na.rm = TRUE),
+by_country <- organdata %>% 
+  group_by(consent_law, country) %>%
+  summarize(donors_mean = mean(donors, na.rm = TRUE),
               donors_sd = sd(donors, na.rm = TRUE),
               gdp_mean = mean(gdp, na.rm = TRUE),
               health_mean = mean(health, na.rm = TRUE),
@@ -522,9 +532,10 @@ by_country <- organdata %>% group_by(consent_law, country) %>%
               cerebvas_mean = mean(cerebvas, na.rm = TRUE))
 
 # Doing the same in another better way
-by_country <- organdata %>% group_by(consent_law, country) %>%
-    summarize_if(is.numeric, list(mean, sd), na.rm = TRUE) %>% # list instead funs
-    ungroup()
+by_country <- organdata %>% 
+  group_by(consent_law, country) %>%
+  summarize_if(is.numeric, list(mean, sd), na.rm = TRUE) %>% # list instead funs
+  ungroup()
 by_country # vars are named using the original variable, with the function’s name appended
 
 # Cleveland dotplot reordered and colored
@@ -555,7 +566,7 @@ p + geom_pointrange(mapping = aes(ymin = donors_fn1 - donors_fn2, # how us a poi
      labs(x= "", y= "Donor Procurement Rate") + coord_flip()
 ```
 
-## Plot Text Directly
+### Plot Text Directly
 
 The ggrepel package provides geom_text_repel() and geom_label_repel(), two geoms that can pick out labels much more flexibly than the default geom_text(). The ggrepel package has several other useful geoms and options to aid with effectively plotting labels along with points. The performance of its labeling algorithm is consistently very good. For many purposes it will be a better first choice than geom_text().
 
@@ -581,7 +592,7 @@ p + geom_hline(yintercept = 0.5, size = 1.4, color = "gray80") + # two new geoms
          caption = p_caption)
 ```
 
-## Label Outliers
+### Label Outliers
 
 Sometimes we want to pick out some points of interest in the data without labeling every single item. Alternatively, we can pick out specific points by creating a dummy variable in the data set just for this purpose.
 
@@ -616,7 +627,7 @@ p + geom_point() +
     guides(label = FALSE, color = FALSE)
 ```
 
-## Write and draw in the plot area
+### Write and draw in the plot area
 
 Sometimes we want to annotate the figure directly.We use annotate() for this purpose. We will tell annotate() to use a text geom temporarily taking advantage of their features in order to place something on the plot. The annotate() function can work with other geoms, too. The most obvious use-case is putting arbitrary text on the plot.
 
@@ -627,7 +638,7 @@ p + geom_point() + annotate(geom = "text", x = 91, y = 33,
                             hjust = 0)
 ```
 
-## Understanding Scales, Guides, and Themes
+### Understanding Scales, Guides, and Themes
 
 Learning about new geoms extended what we have seen already. Each geom makes a different type of plot. Different plots require different mappings in order to work, and so each geom\_ function takes mappings tailored to the kind of graph it draws. You can't use geom_point() to make a scatterplot without supplying an x and a y mapping, for example. Using geom_histogram() only requires you to supply an x mapping. Similarly, geom_pointrange() requires ymin and ymax mappings in order to know where to draw the lineranges it makes. A geom\_ function may take optional arguments, too. When using geom_boxplot() you can specify what the outliers look like using arguments like outlier.shape and outlier.color.
 
@@ -637,7 +648,7 @@ Now we'll make use of new functions for controlling some aspects of the appearan
 -   Many scales come with a legend or key to help the reader interpret the graph. These are called guides. You can make adjustments to them with the guides() function. Perhaps the most common use case is to make the legend disappear, as it is sometimes superfluous. Another is to adjust the arrangement of the key in legends and colorbars.
 -   Graphs have other features not strictly connected to the logical structure of the data being displayed. These include things like their background color, the typeface used for labels, or the placement of the legend on the graph. To adjust these, use the theme() function.
 
-Consistent with ggplot’s overall approach, adjusting some visible feature of the graph means first thinking about the relationship that the feature has with the underlying data. Roughly speaking, if the change you want to make will affect the substantive interpretation of any particular geom, then most likely you will either be mapping an aesthetic to a variable using that geom’s aes() function, or you will be specifying a change via some scale_ function. If the change you want to make does not affect the interpretation of a given geom_, then most likely you will either be setting a variable inside the geom_ function, or making a cosmetic change via the theme() function.
+Consistent with ggplot's overall approach, adjusting some visible feature of the graph means first thinking about the relationship that the feature has with the underlying data. Roughly speaking, if the change you want to make will affect the substantive interpretation of any particular geom, then most likely you will either be mapping an aesthetic to a variable using that geom's aes() function, or you will be specifying a change via some scale\_ function. If the change you want to make does not affect the interpretation of a given geom\_, then most likely you will either be setting a variable inside the geom\_ function, or making a cosmetic change via the theme() function.
 
 ```{r}
 p <- ggplot(data = organdata,
@@ -646,15 +657,16 @@ p <- ggplot(data = organdata,
                           color = world))
 p + geom_point()
 ```
-Scales and guides are closely connected, which can make things confusing. The guide provides information about the scale, such as in a legend or colorbar. Thus, it is possible to make adjustments to guides from inside the various scale_ functions. More often it is easier to use the guides() function directly.
+
+Scales and guides are closely connected, which can make things confusing. The guide provides information about the scale, such as in a legend or colorbar. Thus, it is possible to make adjustments to guides from inside the various scale\_ functions. More often it is easier to use the guides() function directly.
 
 A plot with three aesthetic mappings. The variable roads is mapped to x; donors is mapped to y; and world is mapped to color. The x and y scales are both continuous, running smoothly from just under the lowest value of the variable to just over the highest value. Various labeled tick marks orient the reader to the values on each axis. The color mapping also has a scale. The world measure is an unordered categorical variable, so its scale is discrete. It takes one of four values, each represented by a different color.
 
-Along with color, mappings like fill, shape, and size will have scales that we might want to customize or adjust. We could have mapped world to shape instead of color. In that case our four-category variable would have a scale consisting of four different shapes. Scales for these mappings may have labels, axis tick marks at particular positions, or specific colors or shapes. If we want to adjust them, we use one of the scale_ functions.
+Along with color, mappings like fill, shape, and size will have scales that we might want to customize or adjust. We could have mapped world to shape instead of color. In that case our four-category variable would have a scale consisting of four different shapes. Scales for these mappings may have labels, axis tick marks at particular positions, or specific colors or shapes. If we want to adjust them, we use one of the scale\_ functions.
 
 Many different kinds of variable can be mapped. More often than not x and y are continuous measures. But they might also easily be discrete, as when we mapped country names to the y axis in our boxplots and dotplots. An x or y mapping can also be defined as a transformation onto a log scale, or as a special sort of number value like a date. Similarly, a color or a fill mapping can be discrete and unordered, as with our world variable, or discrete and ordered, as with letter grades in an exam. A color or fill mapping can also be a continuous quantity, represented as a gradient running smoothly from a low to a high value. Finally, both continuous gradients and ordered discrete values might have some defined neutral midpoint with extremes diverging in both directions.
 
-Because we have several potential mappings, and each mapping might be to one of several different scales, we end up with a lot of individual scale_ functions. Each deals with one combination of mapping and scale. They are named according to a consistent logic: *scale_<MAPPING>_<KIND>*. First comes the scale_ name, then the mapping it applies to, and finally the kind of value the scale will display. Thus, the scale_x_continuous() function controls x scales for continuous variables; scale_y_discrete() adjusts y scales for discrete variables; and scale_x_log10() transforms an x mapping to a log scale. Most of the time, ggplot will guess correctly what sort of scale is needed for your mapping. Then it will work out some default features of the scale (such as its labels and where the tick marks go). In many cases you will not need to make any scale adjustments. If x is mapped to a continuous variable then adding + scale_x_continuous() to your plot statement with no further arguments will have no effect. It is already there implicitly. Adding + scale_x_log10(), on the other hand, will transform your scale, as now you have replaced the default treatment of a continuous x variable.
+Because we have several potential mappings, and each mapping might be to one of several different scales, we end up with a lot of individual scale\_ functions. Each deals with one combination of mapping and scale. They are named according to a consistent logic: \*scale\_<MAPPING>\_<KIND>\*. First comes the scale\_ name, then the mapping it applies to, and finally the kind of value the scale will display. Thus, the scale_x\_continuous() function controls x scales for continuous variables; scale_y\_discrete() adjusts y scales for discrete variables; and scale_x\_log10() transforms an x mapping to a log scale. Most of the time, ggplot will guess correctly what sort of scale is needed for your mapping. Then it will work out some default features of the scale (such as its labels and where the tick marks go). In many cases you will not need to make any scale adjustments. If x is mapped to a continuous variable then adding + scale_x\_continuous() to your plot statement with no further arguments will have no effect. It is already there implicitly. Adding + scale_x\_log10(), on the other hand, will transform your scale, as now you have replaced the default treatment of a continuous x variable.
 
 If you want to adjust the labels or tick marks on a scale, you will need to know which mapping it is for and what sort of scale it is. Then you supply the arguments to the appropriate scale function. For example, we can change the x-axis of the previous plot to a log scale, and then also change the position and labels of the tick marks on the y-axis.
 
@@ -668,7 +680,8 @@ p + geom_point() +
     scale_y_continuous(breaks = c(5, 15, 25),
                        labels = c("Five", "Fifteen", "Twenty Five"))
 ```
-The same applies to mappings like color and fill. Here the available scale_ functions include ones that deal with continuous, diverging, and discrete variables, as well as others that we will encounter later when we discuss the use of color and color palettes in more detail. When working with a scale that produces a legend, we can also use this its scale_ function to specify the labels in the key. To change the title of the legend, however, we use the labs() function, which lets us label all the mappings.
+
+The same applies to mappings like color and fill. Here the available scale\_ functions include ones that deal with continuous, diverging, and discrete variables, as well as others that we will encounter later when we discuss the use of color and color palettes in more detail. When working with a scale that produces a legend, we can also use this its scale\_ function to specify the labels in the key. To change the title of the legend, however, we use the labs() function, which lets us label all the mappings.
 
 ```{r}
 p <- ggplot(data = organdata,
@@ -683,9 +696,10 @@ p + geom_point() +
          y = "Donor Procurement",
         color = "Welfare State")
 ```
+
 If we want to move the legend somewhere else on the plot, we are making a purely cosmetic decision and that is the job of the theme() function. As we have already seen, adding + theme(legend.position = "top") will move the legend as instructed. Finally, to make the legend disappear altogether, we tell ggplot that we do not want a guide for that scale.
 
-We will use scale_ functions fairly regularly to make small adjustments to the labels and axes of our graphs. And we will occasionally use the theme() function to make some cosmetic adjustments.
+We will use scale\_ functions fairly regularly to make small adjustments to the labels and axes of our graphs. And we will occasionally use the theme() function to make some cosmetic adjustments.
 
 ```{r}
 p <- ggplot(data = organdata,
@@ -697,6 +711,194 @@ p + geom_point() +
          y = "Donor Procurement") +
     guides(color = FALSE)
 ```
+
+## Refine your plots
+
+```{r}
+# Progressive enhancements of the same plot
+# v1
+p <- ggplot(data = subset(asasec, Year == 2014),
+            mapping = aes(x = Members, y = Revenues, label = Sname))
+
+p + geom_point() + geom_smooth()
+## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+
+# v2
+p <- ggplot(data = subset(asasec, Year == 2014),
+            mapping = aes(x = Members, y = Revenues, label = Sname))
+
+p + geom_point(mapping = aes(color = Journal)) +
+    geom_smooth(method = "lm")
+
+# v3: 
+p0 <- ggplot(data = subset(asasec, Year == 2014),
+             mapping = aes(x = Members, y = Revenues, label = Sname))
+
+p1 <- p0 + geom_smooth(method = "lm", se = FALSE, color = "gray80") +
+    geom_point(mapping = aes(color = Journal)) 
+
+# v4
+p2 <- p1 + geom_text_repel(data=subset(asasec,
+                                       Year == 2014 & Revenues > 7000),
+                           size = 2)
+p2
+
+# v5
+p3 <- p2 + labs(x="Membership",
+        y="Revenues",
+        color = "Section has own Journal",
+        title = "ASA Sections",
+        subtitle = "2014 Calendar year.",
+        caption = "Source: ASA annual report.")
+p4 <- p3 + scale_y_continuous(labels = scales::dollar) +
+     theme(legend.position = "bottom")
+p4
+```
+
+### Use color to your advantage
+
+You should choose a color palette in the first place based on its ability to express the data you are plotting. Take care to choose a palette that reflects the structure of your data. Separate from these mapping issues, there are considerations about which colors in particular to choose. In general, the default color palettes that ggplot makes available are well-chosen for their perceptual properties and aesthetic qualities. We can also use color and color layers as device for emphasis, to highlight particular data points or parts of the plot, perhaps in conjunction with other features.
+
+We choose color palettes for mappings through one of the scale\_ functions for color or fill. While it is possible to very finely control the look of your color schemes by varying the hue, chroma, and luminance of each color you use via scale_color_hue(), or scale_fill_hue(), in general this is not recommended. Instead you should use the RColorBrewer package to make a wide range of named color palettes available to you. When used in conjunction with ggplot, you access these colors by specifying the scale_color_brewer() or scale_fill_brewer() functions, depending on the aesthetic you are mapping.
+
+You can also specify colors manually, via scale_color_manual() or scale_fill_manual(). These functions take a value argument that can be specified as vector of color names or color values that R knows about. The ability to manually specify colors can be useful when the meaning of a category itself has a strong color association. R knows many color names (like red, and green, and cornflowerblue. Try demo('colors') for an overview. Alternatively, color values can be specified via their hexadecimal RGB value. This is a way of encoding color values in the RGB colorspace, where each channel can take a value from 0 to 255 like this. A color hex value begins with a hash or pound character, \#, followed by three pairs of hexadecimal or "hex" numbers. Hex values are in Base 16, with the first six letters of the alphabet standing for the numbers 10 to 15. This allows a two-character hex number to range from 0 to 255. You read them as \#rrggbb, where rr is the two-digit hex code for the red channel, gg for the green channel, and bb for the blue channel. So \#CC55DD translates in decimal to CC = 204 (red), 55 = 85 (green), and DD = 221 (blue). It gives a strong pink color.
+
+If we are serious about using a safe palette for color-blind viewers, we should investigate the dichromat package (The colorblindr package has similar functionality) instead. It provides a range of safe palettes and some useful functions for helping you approximately see what your current palette might look like to a viewer with one of several different kinds of color blindness.
+
+```{r}
+p <- ggplot(data = organdata,
+            mapping = aes(x = roads, y = donors, color = world))
+p + geom_point(size = 2) + scale_color_brewer(palette = "Set2") +
+    theme(legend.position = "top")
+
+p + geom_point(size = 2) + scale_color_brewer(palette = "Pastel2") +
+        theme(legend.position = "top")
+
+p + geom_point(size = 2) + scale_color_brewer(palette = "Dark2") +
+    theme(legend.position = "top")
+
+# Defining your own palette
+cb_palette <- c("#999999", "#E69F00", "#56B4E9", "#009E73",
+                "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+p4 + scale_color_manual(values = cb_palette)
+
+# Setting default color palette
+Default <- brewer.pal(5, "Set2")
+
+# safety colors from dichromat 
+types <- c("deutan", "protan", "tritan")
+names(types) <- c("Deuteronopia", "Protanopia", "Tritanopia")
+
+color_table <- types %>%
+    purrr::map(~ dichromat(Default, .x)) %>%
+    as_tibble() %>%
+    add_column(Default, .before = TRUE)
+
+color_table
+color_comp(color_table)
+```
+
+### Layer color and text together
+
+Aside from mapping variables directly, color is also very useful when we want to pick out or highlight some aspect of our data. In cases like this that the layered approach of ggplot can really work to our advantage.
+
+We will build up a plot of data about the 2016 US general election. It is contained in the county_data object in the socviz library. We begin by defining a blue and red color for the Democrats and Republicans. Then we create the basic setup and first layer of the plot. We subset the data, including only counties with a value of "No" on the flipped variable. We set the color of geom_point() to be a light gray, as it will form the background layer of the plot. And we apply a log transformation to the x-axis scale.
+
+In the next step we add a second geom_point() layer. Here we start with the same dataset but extract a complementary subset from it. This time we choose the "Yes" counties on the flipped variable. The x and y mappings are the same, but we add a color scale for these points, mapping the partywinner16 variable to the color aesthetic. Then we specify a manual color scale with scale_color_manual(), where the values are the blue and red party_colors we defined above.
+
+The next layer sets the y-axis scale and the labels.
+
+Finally, we add a third layer using the geom_text_repel() function. Once again we supply a set of instructions to subset the data for this text layer. We are interested in the flipped counties that have with a relatively high percentage of African-American residents.
+
+```{r}
+# Democrat Blue and Republican Red
+party_colors <- c("#2E74C0", "#CB454A")
+
+p0 <- ggplot(data = subset(county_data,
+                           flipped == "No"),
+             mapping = aes(x = pop,
+                           y = black/100))
+
+p1 <- p0 + geom_point(alpha = 0.15, color = "gray50") +
+    scale_x_log10(labels=scales::comma) 
+
+p1
+
+p2 <- p1 + geom_point(data = subset(county_data,
+                                    flipped == "Yes"),
+                      mapping = aes(x = pop, y = black/100,
+                                    color = partywinner16)) +
+    scale_color_manual(values = party_colors)
+
+p2
+
+p3 <- p2 + scale_y_continuous(labels=scales::percent) +
+    labs(color = "County flipped to ... ",
+         x = "County Population (log scale)",
+         y = "Percent Black Population",
+         title = "Flipped counties, 2016",
+         caption = "Counties in gray did not flip.")
+
+p3
+
+p4 <- p3 + geom_text_repel(data = subset(county_data,
+                                      flipped == "Yes" &
+                                      black  > 25),
+                           mapping = aes(x = pop,
+                                   y = black/100,
+                                   label = state), size = 2)
+
+p4 + theme_minimal() +
+    theme(legend.position="top")
+```
+
+### Change the appearance of plots with themes
+If we want to change the overall look of it all at once, we can do that using ggplot’s theme engine. Themes can be turned on or off using the theme_set() function. It takes the name of a theme (which will itself be a function) as an argument.
+
+Internally, theme functions are a set of detailed instructions to turn on, turn off, or modify a large number of graphical elements on the plot. Once set, a theme applies to all subsequent plots and it remains active until it is replaced by a different theme. This be done either through the use of another theme_set() statement, or on a per-plot basis by adding the theme function to the end of the plot: p4 + theme_gray() would temporarily override the generally active theme for the p4 object only. You can still use the theme() function to fine-tune any aspect of your plot, as seen above with the relocation of the legend to the top of the graph.
+
+The ggplot library comes with several built-in themes, including theme_minimal() and theme_classic(), with theme_gray() or theme_grey() as the default. If these are not to your taste, install the ggthemes library for many more options.
+
+You can define your own themes either entirely from scratch, or by starting with one you like and making adjustments from there.
+
+Wilke’s cowplot package, for instance, contains a well-developed theme suitable for figures whose final destination is a journal article. Bob Rudis’s hrbrthemes package, meanwhile, has a distinctive and compact look and feel that takes advantage of some freely-available typefaces.
+
+The theme() function allows you to exert very fine-grained control over the appearance of all kinds of text and graphical elements in a plot.
+
+```{r}
+theme_set(theme_bw())
+p4 + theme(legend.position="top")
+
+theme_set(theme_dark())
+p4 + theme(legend.position="top")
+
+theme_set(theme_economist())
+p4 + theme(legend.position="top")
+
+theme_set(theme_wsj())
+
+p4 + theme(plot.title = element_text(size = rel(0.6)),
+           legend.title = element_text(size = rel(0.35)),
+           plot.caption = element_text(size = rel(0.35)),
+           legend.position = "top")
+
+p4 + theme(legend.position = "top")
+
+p4 + theme(legend.position = "top",
+           plot.title = element_text(size=rel(2),
+                                     lineheight=.5,
+                                     family="Times",
+                                     face="bold.italic",
+                                     colour="orange"),
+           axis.text.x = element_text(size=rel(1.1),
+                                      family="Courier",
+                                      face="bold",
+                                      color="purple"))
+```
+### Use Theme Elements in a Substantive Way
+
+
 # Linting
 
 The code in this RMarkdown is linted with the [lintr package](https://github.com/jimhester/lintr), which is based on the [tidyverse style guide](http://style.tidyverse.org/).
