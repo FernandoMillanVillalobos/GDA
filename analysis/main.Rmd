@@ -29,7 +29,7 @@ knit: (function(inputFile, encoding) {
 
 ```{r, include=FALSE}
 knitr::opts_chunk$set(
-  message=FALSE, warning=FALSE 
+  echo=TRUE, message=FALSE, warning=FALSE 
 )
 ```
 
@@ -73,7 +73,7 @@ The code for the herein described process can also be freely downloaded from <ht
 
 # Set up
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 detach_all_packages <- function() {
   basic_packages_blank <-  c("stats",
                              "graphics",
@@ -122,7 +122,7 @@ if (Sys.getenv("RSTUDIO") == "1") {
 
 ## Define packages
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 # from https://mran.revolutionanalytics.com/web/packages/\
 # checkpoint/vignettes/using-checkpoint-with-knitr.html
 # if you don't need a package, remove it from here (commenting not sufficient)
@@ -158,7 +158,7 @@ file = "manifest.R")
 
 ## Install packages
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 # if checkpoint is not yet installed, install it (for people using this
 # system for the first time)
 if (!require(checkpoint)) {
