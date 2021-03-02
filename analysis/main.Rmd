@@ -27,6 +27,12 @@ knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "../", output_file = "index") })
 ---
 
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+  message=FALSE, warning=FALSE 
+)
+```
+
 ```{r, echo=FALSE}
 # CONFIG
 user_name <- "fernandomillanvillalobos" # your Git username (only needed if
@@ -67,7 +73,7 @@ The code for the herein described process can also be freely downloaded from <ht
 
 # Set up
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 detach_all_packages <- function() {
   basic_packages_blank <-  c("stats",
                              "graphics",
@@ -116,7 +122,7 @@ if (Sys.getenv("RSTUDIO") == "1") {
 
 ## Define packages
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # from https://mran.revolutionanalytics.com/web/packages/\
 # checkpoint/vignettes/using-checkpoint-with-knitr.html
 # if you don't need a package, remove it from here (commenting not sufficient)
@@ -142,13 +148,17 @@ library(ggrepel) # work with label
 library(dichromat) # palettes for color-blind
 library(RColorBrewer)
 library(ggthemes) # themes 
+library(hrbrthemes) # themes
+library(gcookbook)
+library(ggridges) # density ridges plots
+library(viridis) # colors 
 library(janitor)", # names  
 file = "manifest.R")
 ```
 
 ## Install packages
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # if checkpoint is not yet installed, install it (for people using this
 # system for the first time)
 if (!require(checkpoint)) {
@@ -206,7 +216,7 @@ source("scripts/label_log10.R")
 
 ## Theme
 
-```{r theme}
+```{r theme, echo=TRUE, message=FALSE, warning=FALSE}
 theme_set(theme_cowplot(font_size = 11))
 ```
 
@@ -214,7 +224,7 @@ theme_set(theme_cowplot(font_size = 11))
 
 Importing datasets.
 
-```{r importing}
+```{r importing, echo=TRUE, message=FALSE, warning=FALSE}
 # Read in data file
 df <- read.table("input/ignore/df_pi.csv", sep = ",", header = TRUE, check.names = FALSE)
 
@@ -867,16 +877,16 @@ Wilke’s cowplot package, for instance, contains a well-developed theme suitabl
 The theme() function allows you to exert very fine-grained control over the appearance of all kinds of text and graphical elements in a plot.
 
 ```{r}
-theme_set(theme_bw())
-p4 + theme(legend.position="top")
+# theme_set(theme_bw())
+# p4 + theme(legend.position="top")
+# 
+# theme_set(theme_dark())
+# p4 + theme(legend.position="top")
+# 
+# theme_set(theme_economist())
+# p4 + theme(legend.position="top")
 
-theme_set(theme_dark())
-p4 + theme(legend.position="top")
-
-theme_set(theme_economist())
-p4 + theme(legend.position="top")
-
-theme_set(theme_wsj())
+# theme_set(theme_wsj())
 
 p4 + theme(plot.title = element_text(size = rel(0.6)),
            legend.title = element_text(size = rel(0.35)),
@@ -897,8 +907,201 @@ p4 + theme(legend.position = "top",
                                       color="purple"))
 ```
 ### Use Theme Elements in a Substantive Way
+The gss_lon data contains information on the age of each GSS respondent for all the years in the survey since 1972. We will fill the density curves with a dark grey color, and then add an indicator of the mean age in each year, and a text layer for the label. With those in place we then adjust the detail of several theme elements, mostly to remove them. As before we use element_text() to tweak the appearance of various text elements such as titles and labels. And we also use element_blank() to remove several of them altogether. First, we need to calculate the mean age of the respondents for each year of interest. Because the GSS has been around for most (but not all) years since 1972, we will look at distributions about every four years since the beginning.
 
+The initial p object subsets the data by the years we have chosen, and maps x to the age variable. The geom_density() call is the base layer, with arguments to turn off its default line color, set the fill to a shade of gray, and scale the y-axis between zero and one. Using our summarized dataset, the geom_vline() layer draws a vertical white line at the mean age of the distribution.
 
+The ggridges package offers a different take on small-multiple density plots by allowing the distributions to overlap vertically to interesting effect. It is especially useful for repeated distributional measures that change in a clear direction. The expand argument in scale_y_discrete() adjusts the scaling of the y-axis slightly. The package also comes with its own theme, theme_ridges() that adjusts the labels so that they are aligned properly. The degree of overlap in the distributions is controlled by the scale argument in the geom.
+
+Setting these thematic elements in an ad hoc way is often one of the first things people want to do when they make plot. But making small adjustments to theme elements should be the very last thing you do in the plotting process. Ideally, once you have set up a theme that works well for you, it should be something you can avoid having to do at all.
+
+```{r}
+yrs <- c(seq(1972, 1988, 4), 1993, seq(1996, 2016, 4))
+yrs
+
+mean_age <- gss_lon %>%
+    filter(age %nin% NA && year %in% yrs) %>%
+    group_by(year) %>%
+    summarize(xbar = round(mean(age, na.rm = TRUE), 0))
+mean_age
+
+mean_age$y <- 0.3
+
+yr_labs <- data.frame(x = 85, y = 0.8,
+                      year = yrs)
+
+# First, we create the plot structure
+p <- ggplot(data = subset(gss_lon, year %in% yrs),
+            mapping = aes(x = age))
+
+p1 <- p + geom_density(fill = "gray20", color = FALSE,
+                       alpha = 0.9, mapping = aes(y = ..scaled..)) +
+    geom_vline(data = subset(mean_age, year %in% yrs),
+               aes(xintercept = xbar), color = "white", size = 0.5) +
+    geom_text(data = subset(mean_age, year %in% yrs),
+              aes(x = xbar, y = y, label = xbar), nudge_x = 7.5,
+              color = "white", size = 3.5, hjust = 1) +
+    geom_text(data = subset(yr_labs, year %in% yrs),
+              aes(x = x, y = y, label = year)) +
+    facet_grid(year ~ ., switch = "y")
+
+# With the structure of the plot in place, we then style the elements in the way that we want, using a series of instructions to theme().
+# p1 + theme_book(base_size = 10, plot_title_size = 10,
+#                 strip_text_size = 32, panel_spacing = unit(0.1, "lines")) +
+#     theme(plot.title = element_text(size = 16),
+#           axis.text.x= element_text(size = 12),
+#           axis.title.y=element_blank(),
+#           axis.text.y=element_blank(),
+#           axis.ticks.y = element_blank(),
+#           strip.background = element_blank(),
+#           strip.text.y = element_blank(),
+#           panel.grid.major = element_blank(),
+#           panel.grid.minor = element_blank()) +
+#     labs(x = "Age",
+#          y = NULL,
+#          title = "Age Distribution of\nGSS Respondents")
+
+# Using the ggridges package
+p <- ggplot(data = gss_lon,
+            mapping = aes(x = age, y = factor(year, levels = rev(unique(year)),
+                                     ordered = TRUE)))
+
+p + geom_density_ridges(alpha = 0.6, fill = "lightblue", scale = 1.5) +
+    scale_x_continuous(breaks = c(25, 50, 75)) +
+    scale_y_discrete(expand = c(0.01, 0)) + 
+    labs(x = "Age", y = NULL,
+         title = "Age Distribution of\nGSS Respondents") +
+    theme_ridges() +
+    theme(title = element_text(size = 16, face = "bold"))
+```
+### Case Studies
+#### Two y-axes
+R makes it slightly tricky to draw graphs with two y-axes. In fact, ggplot rules it out of order altogether. It is possible to do it using R’s base graphics. Most of the time when people draw plots with two y-axes they want to line the series up as closely as possible because they suspect that there’s a substantive association between them. The main problem with using two y-axes is that it makes it even easier than usual to fool yourself (or someone else) about the degree of association between the variables. This is because you can adjust the scaling of the axes to relative to one another in way that moves the data series around more or less however you like.
+
+We could use a split- or broken-axis plot to show the two series at the same time. These can be effective sometimes, and they seem to have better perceptual properties than overlayed charts with dual axes. Another compromise, if the series are not in the same units (or of widely differing magnitudes), is to rescale one of the series (e.g., by dividing or multiplying it by a thousand), or alternatively to index each of them to 100 at the start of the first period, and then plot them both. Index numbers can have complications of their own, but here they allow us use one axis instead of two, and also to calculate a sensible difference between the two series and plot that as well.
+
+Now we have our two plots, we want to lay them out nicely. We do not want them to appear in the same plot area, but we do want to compare them. It would be possible to do this with a facet, but that would mean doing a fair amount of data munging to get all three series (the two indices and the difference between them) into the same tidy data frame. An alternative is to make two separate plots and then arrange them just as we like. The cowplot library makes things easy. It has a plot_grid() function that works much like grid.arrange() while also taking care of some fine details, including the proper alignment of axes across separate plot objects.
+
+The broader problem with dual-axis plots of this sort is that the apparent association between these variables is probably spurious. The original plot is enabling our desire to spot patterns, but substantively it is probably the case that both of these time series are tending to increase, but are not otherwise related in any deep way. The use of dual axes is not recommended in general because is already much too easy to present spurious, or at least overconfident, associations, especially with time series data. Scatterplots can do that just fine. Even with a single series, we can make associations look steeper or flatter by fiddling with the aspect ratio. Using two y-axes gives you an extra degree of freedom to mess about with the data.
+
+```{r}
+# Tidying data
+head(fredts)
+fredts_m <- fredts %>% select(date, sp500_i, monbase_i) %>%
+    gather(key = series, value = score, sp500_i:monbase_i)
+
+head(fredts_m)
+
+# Plotting
+p <- ggplot(data = fredts_m,
+            mapping = aes(x = date, y = score,
+                          group = series,
+                          color = series))
+p1 <- p + geom_line() + theme(legend.position = "top") +
+    labs(x = "Date",
+         y = "Index",
+         color = "Series")
+
+p <- ggplot(data = fredts,
+            mapping = aes(x = date, y = sp500_i - monbase_i))
+
+p2 <- p + geom_line() +
+    labs(x = "Date",
+         y = "Difference")
+cowplot::plot_grid(p1, p2, nrow = 2, rel_heights = c(0.75, 0.25), align = "v") # arrange the plots 
+```
+#### Redrawing a bad slide
+To redraw the chart I took the numbers from the bars on the chart together with employee data from QZ.com. Where there was quarterly data in the slide, I used the end-of-year number for employees, except for 2012. Mayer was appointed in July of 2012. Ideally we would have quarterly revenue and quarterly employee data for all years, but given that we do not, the most sensible thing to do is to keep things annualized except for the one year of interest, when Mayer arrives as CEO. It’s worth doing this because otherwise the large round of layoffs that immediately preceded her arrival would be misattributed to her tenure as CEO. The redrawing is straightforward. We could just draw a scatterplot and color the points by whether Mayer was CEO at the time. We can take a small step further by making a scatterplot but also holding on to the temporal element. We can use geom_path() and use use line segments to “join the dots” of the yearly observations in order, labeling each point with its year.
+
+Alternatively, we can keep the analyst community happy by putting time back on the x-axis and plotting the ratio of revenue to employees on the y-axis.
+
+```{r}
+headTail(yahoo)
+
+p <- ggplot(data = yahoo,
+            mapping = aes(x = Employees, y = Revenue))
+p + geom_path(color = "gray80") +
+    geom_text(aes(color = Mayer, label = Year), # highlight points of interest 
+              size = 3, fontface = "bold") +
+    theme(legend.position = "bottom") +
+    labs(color = "Mayer is CEO",
+         x = "Employees", y = "Revenue (Millions)",
+         title = "Yahoo Employees vs Revenues, 2004-2014") +
+    scale_y_continuous(labels = scales::dollar) +
+    scale_x_continuous(labels = scales::comma)
+
+# Alternative version
+p <- ggplot(data = yahoo,
+            mapping = aes(x = Year, y = Revenue/Employees))
+
+p + geom_vline(xintercept = 2012) +
+    geom_line(color = "gray60", size = 2) +
+    annotate("text", x = 2013, y = 0.44,
+             label = " Mayer becomes CEO", size = 2.5) +
+    labs(x = "Year\n",
+         y = "Revenue/Employees",
+         title = "Yahoo Revenue to Employee Ratio, 2004-2014")
+```
+#### Saying no to pie
+There is a reasonable amount of customization in this graph. First, the text of the facets is made bold in the theme() call. The graphical element is first named (strip.text.x) and then modified using the element_text() function. We also use a custom palette for the fill mapping, via scale_fill_brewer(). And finally we relabel the facets to something more informative than their bare variable names. This is done using the labeller argument and the as_labeller() function inside the facet_grid() call. At the beginning of the plotting code, we set up an object called f_labs, which is in effect a tiny data frame that associates new labels with the values of the type variable in studebt. We use backticks (the angled quote character located next to the ‘1’ key on US keyboards) to pick out the values we want to relabel. The as_labeller() function takes this object and uses it to create new text for the labels when facet_grid() is called.
+
+When the categorical axis labels are long, though, I generally find it’s easier to read them on the y-axis. The colors on the graph are not encoding or mapping any information in the data that is not already taken care of by the faceting. The fill mapping is useful, but also redundant. This graph could easily be in black and white, and would be just as informative if it were.
+
+One thing that is not emphasized in a faceted chart like this is the idea that each of the debt categories is a share or percentage of a total amount.
+
+Instead of having separate bars distinguished by heights, we can array the percentages for each distribution proportionally within a single bar. We will make a stacked bar chart. We are careful to map the income categories in an ascending sequence of colors, and to adjust the key so that the values run from low to high, from left to right, and from yellow to purple. This is done partly by switching the fill mapping from Debt to Debtrc. The categories of the latter are the same as the former, but the sequence of income levels is coded in the order we want.
+
+The rest of the work is done in the guides() call. We give guides() a series of instructions about the fill mapping: reverse the direction of the color coding; put the legend title above the key; put the labels for the colors below the key; widen the width of the color boxes a little, and place the whole key on a single row.
+
+```{r}
+head(studebt)
+
+# setting up some labels in advance, as we will reuse them
+p_xlab <- "Amount Owed, in thousands of Dollars"
+p_title <- "Outstanding Student Loans"
+p_subtitle <- "44 million borrowers owe a total of $1.3 trillion"
+p_caption <- "Source: FRB NY"
+
+# a special label for the facets
+f_labs <- c(`Borrowers` = "Percent of\nall Borrowers",
+            `Balances` = "Percent of\nall Balances")
+
+p <- ggplot(data = studebt,
+            mapping = aes(x = Debt, y = pct/100, fill = type))
+p + geom_bar(stat = "identity") +
+    scale_fill_brewer(type = "qual", palette = "Dark2") +
+    scale_y_continuous(labels = scales::percent) +
+    guides(fill = FALSE) +
+    theme(strip.text.x = element_text(face = "bold")) +
+    labs(y = NULL, x = p_xlab,
+      caption = p_caption,
+      title = p_title,
+      subtitle = p_subtitle) +
+    facet_grid(~ type, labeller = as_labeller(f_labs)) +
+    coord_flip()
+
+# stacked bar chart
+p <- ggplot(studebt, aes(y = pct/100, x = type, fill = Debtrc)) # pct/100 to plot as pct 
+p + geom_bar(stat = "identity", color = "gray80") + # we set the border colors of the bars to a light gray in geom_bar() to make the bar segments easier to distinguish. 
+  scale_x_discrete(labels = as_labeller(f_labs)) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_viridis(discrete = TRUE) + # using scale_fill_viridis() for the color palette 
+  guides(fill = guide_legend(reverse = TRUE,
+                             title.position = "top",
+                             label.position = "bottom",
+                             keywidth = 3,
+                             nrow = 1)) +
+  labs(x = NULL, y = NULL,
+       fill = "Amount Owed, in thousands of dollars",
+       caption = p_caption,
+       title = p_title,
+       subtitle = p_subtitle) +
+  theme(legend.position = "top",
+        axis.text.y = element_text(face = "bold", hjust = 1, size = 12),
+        axis.ticks.length = unit(0, "cm"),
+        panel.grid.major.y = element_blank()) +
+  coord_flip()
+```
 # Linting
 
 The code in this RMarkdown is linted with the [lintr package](https://github.com/jimhester/lintr), which is based on the [tidyverse style guide](http://style.tidyverse.org/).
